@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.json",
+
+  "include": [
+    "../../src"
+  ],
+
+  "exclude": [
+    "*.test.*"
+  ],
+
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationDir": "../../build/declaration",
+
+    "plugins": [
+      {
+        "transform": "@zerollup/ts-transform-paths"
+      }
+    ]
+  }
+}

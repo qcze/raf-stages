@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    // typecheck rules
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    // linter rules
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "allowUnusedLabels": false,
+    "noUnusedParameters": true,
+    "allowUnreachableCode": true,
+    "preserveValueImports": true,
+    "noUncheckedIndexedAccess": true,
+    "importsNotUsedAsValues": "error",
+    // alias
+    "baseUrl": ".",
+    "paths": {
+      ":private": [
+        "src/private"
+      ],
+
+      ":private/*": [
+        "src/private/*"
+      ]
+    }
+  }
+}
