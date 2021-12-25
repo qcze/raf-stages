@@ -1,6 +1,6 @@
 {
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "@qcz/raf-stages",
   "description": "Coordinate requestAnimationFrame calls",
   "homepage": "https://github.com/qcze/raf-stages#readme",
