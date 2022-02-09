@@ -1,31 +1,32 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "moduleResolution": "node",
-    // typecheck rules
     "strict": true,
-    "exactOptionalPropertyTypes": true,
-    // linter rules
     "noUnusedLocals": true,
     "noImplicitReturns": true,
-    "noImplicitOverride": true,
     "allowUnusedLabels": false,
+    "noImplicitOverride": true,
     "noUnusedParameters": true,
-    "allowUnreachableCode": true,
-    "preserveValueImports": true,
+    "allowUnreachableCode": false,
     "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    "target": "es2021",
+
+    "preserveValueImports": true,
     "importsNotUsedAsValues": "error",
-    // alias
+
     "baseUrl": ".",
+    "module": "es2020",
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+
     "paths": {
-      ":private": [
-        "src/private"
+      "#exports/*": [
+        "src/exports/*"
       ],
 
-      ":private/*": [
-        "src/private/*"
+      "#internal/*": [
+        "src/internal/*"
       ]
     }
   }

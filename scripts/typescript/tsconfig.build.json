@@ -6,14 +6,10 @@
   ],
 
   "compilerOptions": {
-    "declaration": true,
     "removeComments": true,
-    "emitDeclarationOnly": true,
-    "declarationDir": "../../build/declaration",
 
     "plugins": [
       {
-        "afterDeclarations": true,
         "transform": "typescript-transform-paths"
       }
     ]

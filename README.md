@@ -2,145 +2,122 @@
 
 Coordinate `requestAnimationFrame` calls
 
+## Compatibility Warning
+
+This library is targeted to `ECMAScript2021` (may be changed for later spec in further major versions)\
+If you want to transpile it for earlier `ECMAScript` spec - do it yourself
+
 ## Usage
 
-- Create instance of `RAFEmitter`
-- Emitter is idle when no callback scheduled
+### Create scheduler
+
+- schedulers are passive: they do not run requestAnimationFrame if no callbacks scheduled
 
 ```ts
-// src/emitter.ts
+import {
+  StageSchedulerAF,
 
-export enum Stage {
+  type StageEmitter
+} from "@qcz/raf-stages"
+
+enum SchedulerStage {
   Update,
   Effect
 }
 
-class RAFEmitterExample extends RAFEmitter<Stage> {
-  // override _order method to define stage execution order
-  protected override *_order(): IterableIterator<Stage> {
-    yield Stage.Update
-    yield Stage.Effect
-  }
-}
+const scheduler = new StageSchedulerAF<SchedulerStage>({
+  // you can pass your own requestAnimationFrame and cancelAnimationFrame
+  caf: cancelAnimationFrame,
+  raf: requestAnimationFrame,
 
-export const emitter = new RAFEmitterExample()
+  // you can perform batching by wrapping emitter.emit calls
+  emit: (emitter: StageEmitter<SchedulerStage>) => {
+    emitter.emit(SchedulerStage.Update)
+    emitter.emit(SchedulerStage.Effect)
+  }
+})
 ```
 
-- Schedule callbacks for stage with `request` method
-- Cancel callbacks from stage with `cancel` method
-- Callbacks scheduled for stage are unique
-- Callback is a `FrameRequestCallback` (the same as you pass to `requestAnimationFrame`)
+### Request and cancel callbacks
+
+- callback is `FrameRequestCallback` (the same you pass to `requestAnimationFrame`)
+- callbacks scheduled for stage are unique
 
 ```ts
-// src/state.ts
-
-import { Stage, emitter } from './emitter'
-
-function update(time: number): void {
+const update: FrameRequestCallback = function (time) {
   // ...
 }
 
-function effect(time: number): void {
+const effect: FrameRequestCallback = function (time) {
   // ...
 }
 
-function update_tick(update_time: number): void {
+// update will be called before effect on next animation frame
+scheduler.request(SchedulerStage.Effect, effect)
+scheduler.request(SchedulerStage.Update, update)
+
+// you can cancel callback scheduled for stage
+scheduler.cancel(SchedulerStage.Effect, effect)
+
+// create update loop
+const updateloop: FrameRequestCallback = function (update_time) {
   // ...
 
-  // will schedule update_tick for next animation frame so it will run continuosly
-  emitter.request(Stage.Update, update_tick)
+  // will schedule callback for next animation frame
+  scheduler.request(SchedulerStage.Update, updateloop)
 
-  // but this will emit in current animation frame
-  emitter.request(Stage.Effect, effect_time => {
-    console.log(update_time === effect_time) // true
+  // will schedule callback for current animation frame because Effect stage emits after Update stage
+  scheduler.request(SchedulerStage.Effect, effect_time => {
+    // expected output: true
+    console.log(update_time === effect_time)
   })
 }
 
-// will emit effect after update and update_tick in next animation frame
-emitter.request(Stage.Update, update)
-emitter.request(Stage.Effect, effect)
-emitter.request(Stage.Update, update_tick)
-
-// no effect, update already scheduled
-emitter.request(Stage.Update, update)
-
-// cancel update_tick
-emitter.cancel(Stage.Update, update_tick)
+// init update loop
+scheduler.request(SchedulerStage.Update, updateloop)
 ```
 
-- Override `_raf` and `_caf` methods to provide custom `requestAnimationFrame` and `cancelAnimationFrame` eg. to polyfill
+### Create attachment to scheduler
+
+- note that stages in attachment are only sequenced locally
 
 ```ts
-import rafpolyfill from 'example-polyfill'
+import {
+  StageSchedulerAttachment
+} from "@qcz/raf-stages"
 
-class RAFEmitterPolyfilled extends RAFEmitter<Stage> {
-  protected override _caf(handle: number): void {
-    rafpolyfill.cancelAnimationFrame(cb)
-  }
-
-  protected override _raf(cb: FrameRequestCallback): number {
-    return rafpolyfill.requestAnimationFrame(cb)
-  }
-}
-```
-
-- Override `_emit` and `_emitstage` methods to wrap execution eg. to batch updates
-
-```ts
-import { unstable_batchedUpdates } from 'react-dom'
-
-enum Stage {
-  Update,
-  Effect
+enum AttachmentStage {
+  Pre,
+  Post
 }
 
-class RAFEmitterBatched extends RAFEmitter<Stage> {
-  protected override _emit(time: number): void {
-    // batch all stages
-    unstable_batchedUpdates(() => {
-      super._emit(time)
-    })
+const attachment = new StageSchedulerAttachment<SchedulerStage.Update, AttachmentStage>({
+  // attach to SchedulerStage.Update of scheduler
+  src: {
+    scheduler: scheduler,
+    stage: SchedulerStage.Update
+  },
+
+  emit: emitter => {
+    emitter.emit(AttachmentStage.Pre)
+    emitter.emit(AttachmentStage.Post)
   }
+})
 
-  protected override _emitstage(stage: Stage, time: numbere): void {
-    // batch Stage.Effect only
-    switch (stage) {
-      case Stage.Effect:
-        unstable_batchedUpdates(() => {
-          super._emitstage(stage, time)
-        })
-
-        break
-
-      default:
-        super._emitstage(stage, time)
-
-        break
-    }
-  }
+const pre: FrameRequestCallback = function (time) {
+  // ...
 }
-```
 
-## API
-
-```ts
-abstract class RAFEmitter<Stage> {
-  // cancel callback from stage
-  public cancel(stage: Stage, cb: FrameRequestCallback): void
-  // schedule callback for stage
-  public request(stage: Stage, cb: FrameRequestCallback): void
-
-  // cancelAnimationFrame
-  protected _caf(handle: number): void
-  // requestAnimationFrame
-  protected _raf(cb: FrameRequestCallback): number
-
-  // emits all stages in _order
-  protected _emit(time: number): void
-  // clears and emits given stage
-  protected _emitstage(stage: Stage, time: number): void
-
-  // defines exectuion order
-  protected abstract _order(): IterableIterator<Stage>
+const post: FrameRequestCallback = function (time) {
+  // ...
 }
+
+const update: FrameRequestCallback = function (time) {
+  // ...
+}
+
+// callbacks will be called in following order: update - pre - post
+scheduler.request(SchedulerStage.Update, update)
+attachment.reqeust(AttachmentStage.Post, post)
+attachment.request(AttachmentStage.Pre, pre)
 ```

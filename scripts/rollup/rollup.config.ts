@@ -1,64 +1,35 @@
-import path from 'path'
-import rollup from 'rollup'
-import rollup_babel from '@rollup/plugin-babel'
-import rollup_resolve from '@rollup/plugin-node-resolve'
-import { terser as rollup_terser } from 'rollup-plugin-terser'
+import * as path from "path"
+import * as rollup from "rollup"
+import * as ttypescript from "ttypescript"
+
+import {
+  default as rollup_typescript
+} from "@rollup/plugin-typescript"
 
 export default rollup.defineConfig({
   input: {
-    index: path.resolve('./src/exports/index.ts')
+    index: path.resolve("./src/exports/index.ts")
   },
 
-  external: [
-    /@babel\/runtime-corejs3/
-  ],
-
   plugins: [
-    rollup_babel({
-      exclude: /node_modules/,
-      babelHelpers: 'runtime',
-      configFile: path.resolve('./scripts/babel/babel.config.mjs'),
-
-      extensions: [
-        '.js',
-        '.mjs',
-        '.cjs',
-
-        '.ts'
-      ]
-    }),
-
-    rollup_resolve({
-      extensions: [
-        '.js',
-        '.mjs',
-        '.cjs',
-
-        '.ts'
-      ]
+    rollup_typescript({
+      typescript: ttypescript,
+      tsconfig: path.resolve("./scripts/typescript/tsconfig.build.json")
     })
   ],
 
   output: [
     {
-      format: 'commonjs',
-      chunkFileNames: '[hash].cjs',
-      entryFileNames: '[name].cjs',
-      dir: path.resolve('./build/bundle/commonjs'),
-
-      plugins: [
-        rollup_terser()
-      ]
+      format: "cjs",
+      chunkFileNames: "chunk/[hash].cjs",
+      entryFileNames: "entry/[name].cjs",
+      dir: path.resolve("./build/bundle/cjs")
     },
     {
-      format: 'module',
-      chunkFileNames: '[hash].mjs',
-      entryFileNames: '[name].mjs',
-      dir: path.resolve('./build/bundle/esmodule'),
-
-      plugins: [
-        rollup_terser()
-      ]
+      format: "esm",
+      chunkFileNames: "chunk/[hash].mjs",
+      entryFileNames: "entry/[name].mjs",
+      dir: path.resolve("./build/bundle/esm")
     }
   ]
 })
